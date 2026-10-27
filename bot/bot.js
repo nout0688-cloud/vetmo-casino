@@ -43,6 +43,12 @@ const client = new Client({
 
 // Slash Commands Definition
 const commands = [
+  {
+    name: "play",
+    description: "Запустить Vetmo Casino прямо в Discord",
+    type: 4, // PRIMARY_ENTRY_POINT (natively launches activity in Discord)
+    handler: 2, // DISCORD_LAUNCH_ACTIVITY
+  },
   new SlashCommandBuilder()
     .setName("balance")
     .setDescription("Проверить свой баланс Vetmo Coins (VMC)"),
@@ -76,7 +82,7 @@ const commands = [
     .setDescription("Топ игроков по количеству Vetmo Coins"),
   new SlashCommandBuilder()
     .setName("casino")
-    .setDescription("Открыть графическую мини-аппку казино (Discord Activity)"),
+    .setDescription("Открыть карточку с кнопкой запуска казино"),
 ];
 
 async function registerCommands() {
@@ -84,7 +90,7 @@ async function registerCommands() {
     const rest = new REST({ version: "10" }).setToken(token);
     console.log("[bot] Registering slash commands globally...");
     await rest.put(Routes.applicationCommands(clientId), {
-      body: commands.map((c) => c.toJSON()),
+      body: commands.map((c) => (typeof c.toJSON === "function" ? c.toJSON() : c)),
     });
     console.log("[bot] Slash commands registered successfully.");
   } catch (err) {
@@ -93,6 +99,27 @@ async function registerCommands() {
 }
 
 client.on("interactionCreate", async (interaction) => {
+  // 1. Native Activity Launch Button (Discord Type 12 Callback)
+  if (interaction.isButton() && interaction.customId === "launch_activity") {
+    try {
+      await client.rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 12, // InteractionCallbackType.LAUNCH_ACTIVITY
+          },
+        }
+      );
+      return;
+    } catch (err) {
+      console.error("[bot] LAUNCH_ACTIVITY failed:", err);
+      return interaction.reply({
+        content: "⚠️ Нажми ракету 🚀 в голосовом канале или открой в браузере: https://vetmo-casino.onrender.com",
+        ephemeral: true,
+      });
+    }
+  }
+
   if (!interaction.isChatInputCommand()) return;
 
   const userId = interaction.user.id;
@@ -184,51 +211,27 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   if (interaction.commandName === "casino") {
-    let inviteUrl = null;
-    const voiceChannel = interaction.member?.voice?.channel;
-
-    if (voiceChannel) {
-      try {
-        const invite = await voiceChannel.createInvite({
-          targetApplication: clientId,
-          targetType: 2, // EmbeddedApplication
-          maxAge: 86400,
-        });
-        inviteUrl = invite.url;
-      } catch (err) {
-        console.error("[bot] failed to create voice activity invite:", err);
-      }
-    }
-
     const embed = new EmbedBuilder()
       .setColor(0x000000)
       .setTitle("🎰 VETMO CASINO | MONOCHROME EDITION")
       .setDescription(
-        "**Способы запуска игры:**\n\n" +
-          "🚀 **В Discord (Activity):**\n" +
-          "Зайди в любой голосовой канал сервера и нажми иконку **ракеты 🚀** (Запустить активность) внизу у микрофона → выбери **«ветмо казик»**.\n\n" +
-          "🌐 **Прямо по ссылке:**\n" +
-          "Жми кнопку «ИГРАТЬ В БРАУЗЕРЕ» ниже (открывает полноценное казино с балансом и звуками)."
+        "Нажми зелёную кнопку **«ИГРАТЬ В КАЗИНО»** ниже — окно активности запустится прямо внутри Discord!\n\n" +
+          "• Монохромные слоты и Coinflip\n" +
+          "• Живой баланс Vetmo Coins (VMC)\n" +
+          "• Войс-майнинг (+15 VMC / мин в войсе)"
       );
 
-    const row = new ActionRowBuilder();
-
-    if (inviteUrl) {
-      row.addComponents(
-        new ButtonBuilder()
-          .setLabel("ВОЙТИ В АКТИВНОСТЬ (ВОЙС)")
-          .setStyle(ButtonStyle.Link)
-          .setURL(inviteUrl)
-          .setEmoji("🚀")
-      );
-    }
-
-    row.addComponents(
+    const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setLabel("ИГРАТЬ В БРАУЗЕРЕ (WEB)")
+        .setCustomId("launch_activity")
+        .setLabel("ИГРАТЬ В КАЗИНО")
+        .setStyle(ButtonStyle.Success)
+        .setEmoji("🎰"),
+      new ButtonBuilder()
+        .setLabel("ИГРАТЬ В БРАУЗЕРЕ")
         .setStyle(ButtonStyle.Link)
         .setURL("https://vetmo-casino.onrender.com")
-        .setEmoji("🎰")
+        .setEmoji("🌐")
     );
 
     return interaction.reply({ embeds: [embed], components: [row] });
