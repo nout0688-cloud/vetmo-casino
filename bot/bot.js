@@ -184,21 +184,50 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   if (interaction.commandName === "casino") {
+    let inviteUrl = null;
+    const voiceChannel = interaction.member?.voice?.channel;
+
+    if (voiceChannel) {
+      try {
+        const invite = await voiceChannel.createInvite({
+          targetApplication: clientId,
+          targetType: 2, // EmbeddedApplication
+          maxAge: 86400,
+        });
+        inviteUrl = invite.url;
+      } catch (err) {
+        console.error("[bot] failed to create voice activity invite:", err);
+      }
+    }
+
     const embed = new EmbedBuilder()
       .setColor(0x000000)
       .setTitle("🎰 VETMO CASINO | MONOCHROME EDITION")
       .setDescription(
-        "Нажми кнопку ниже, чтобы открыть интерактивную мини-аппку казино прямо в Discord (поддерживаются ПК и мобилки).\n\n" +
-          "• Слоты и Coinflip (Орёл / Решка)\n" +
-          "• Живой баланс Vetmo Coins (VMC)\n" +
-          "• Войс-майнинг (+15 VMC / мин в войсе)"
+        "**Способы запуска игры:**\n\n" +
+          "🚀 **В Discord (Activity):**\n" +
+          "Зайди в любой голосовой канал сервера и нажми иконку **ракеты 🚀** (Запустить активность) внизу у микрофона → выбери **«ветмо казик»**.\n\n" +
+          "🌐 **Прямо по ссылке:**\n" +
+          "Жми кнопку «ИГРАТЬ В БРАУЗЕРЕ» ниже (открывает полноценное казино с балансом и звуками)."
       );
 
-    const row = new ActionRowBuilder().addComponents(
+    const row = new ActionRowBuilder();
+
+    if (inviteUrl) {
+      row.addComponents(
+        new ButtonBuilder()
+          .setLabel("ВОЙТИ В АКТИВНОСТЬ (ВОЙС)")
+          .setStyle(ButtonStyle.Link)
+          .setURL(inviteUrl)
+          .setEmoji("🚀")
+      );
+    }
+
+    row.addComponents(
       new ButtonBuilder()
-        .setLabel("ОТКРЫТЬ VETMO CASINO")
+        .setLabel("ИГРАТЬ В БРАУЗЕРЕ (WEB)")
         .setStyle(ButtonStyle.Link)
-        .setURL(`https://discord.com/activities/${clientId}`)
+        .setURL("https://vetmo-casino.onrender.com")
         .setEmoji("🎰")
     );
 
