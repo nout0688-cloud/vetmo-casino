@@ -42,13 +42,27 @@ export function getUser(userId) {
   return state.users[userId];
 }
 
-export function addVoiceReward(userId, amount = 10) {
+export function addVoiceMinute(userId) {
   const user = getUser(userId);
-  user.balance += amount;
   user.voiceMinutes = (user.voiceMinutes || 0) + 1;
-  user.voiceEarned = (user.voiceEarned || 0) + amount;
+  let awarded = 0;
+  // 25 Vetmo Coins every 10 minutes in voice
+  if (user.voiceMinutes % 10 === 0) {
+    awarded = 25;
+    user.balance += awarded;
+    user.voiceEarned = (user.voiceEarned || 0) + awarded;
+  }
   save();
-  return { balance: user.balance, voiceMinutes: user.voiceMinutes, voiceEarned: user.voiceEarned };
+  return {
+    balance: user.balance,
+    voiceMinutes: user.voiceMinutes,
+    voiceEarned: user.voiceEarned || 0,
+    awarded,
+  };
+}
+
+export function addVoiceReward(userId) {
+  return addVoiceMinute(userId);
 }
 
 export function claimFaucet(userId) {

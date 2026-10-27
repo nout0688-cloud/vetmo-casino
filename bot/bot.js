@@ -131,7 +131,7 @@ client.on("interactionCreate", async (interaction) => {
           `🎙️ **Майнинг в войсе:**\n` +
           `Время в войсе: **${user.voiceMinutes || 0} мин**\n` +
           `Заработано в войсе: **${(user.voiceEarned || 0).toLocaleString()} VMC**\n` +
-          `(Начисление: +${VOICE_REWARD_PER_MIN} VMC / мин)`
+          `(Начисление: +25 VMC за каждые 10 минут)`
       );
     return interaction.reply({ embeds: [embed] });
   }
@@ -250,8 +250,10 @@ client.once("ready", () => {
               // Ignore deafened users to prevent 24/7 mute AFK farming
               const isDeaf = member.voice.selfDeaf || member.voice.serverDeaf;
               if (!isDeaf) {
-                addVoiceReward(member.id, VOICE_REWARD_PER_MIN);
-                rewardedCount++;
+                const res = addVoiceReward(member.id);
+                if (res && res.awarded > 0) {
+                  rewardedCount++;
+                }
               }
             });
           }
@@ -259,7 +261,7 @@ client.once("ready", () => {
       });
     });
     if (rewardedCount > 0) {
-      console.log(`[voice-miner] Awarded +${VOICE_REWARD_PER_MIN} VMC to ${rewardedCount} active voice members.`);
+      console.log(`[voice-miner] Awarded +25 VMC to ${rewardedCount} active voice members reaching 10-min mark.`);
     }
   }, 60 * 1000);
 });
