@@ -43,12 +43,6 @@ const client = new Client({
 
 // Slash Commands Definition
 const commands = [
-  {
-    name: "play",
-    description: "Запустить Vetmo Casino прямо в Discord",
-    type: 4, // PRIMARY_ENTRY_POINT (natively launches activity in Discord)
-    handler: 2, // DISCORD_LAUNCH_ACTIVITY
-  },
   new SlashCommandBuilder()
     .setName("balance")
     .setDescription("Проверить свой баланс Vetmo Coins (VMC)"),
@@ -82,7 +76,7 @@ const commands = [
     .setDescription("Топ игроков по количеству Vetmo Coins"),
   new SlashCommandBuilder()
     .setName("casino")
-    .setDescription("Открыть карточку с кнопкой запуска казино"),
+    .setDescription("Запустить казино Vetmo Casino прямо в Discord"),
 ];
 
 async function registerCommands() {
@@ -90,7 +84,7 @@ async function registerCommands() {
     const rest = new REST({ version: "10" }).setToken(token);
     console.log("[bot] Registering slash commands globally...");
     await rest.put(Routes.applicationCommands(clientId), {
-      body: commands.map((c) => (typeof c.toJSON === "function" ? c.toJSON() : c)),
+      body: commands.map((c) => c.toJSON()),
     });
     console.log("[bot] Slash commands registered successfully.");
   } catch (err) {
