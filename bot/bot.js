@@ -120,7 +120,7 @@ client.on("interactionCreate", async (interaction) => {
   const username = interaction.user.username;
 
   if (interaction.commandName === "balance") {
-    const user = getUser(userId);
+    const user = await getUser(userId);
     const embed = new EmbedBuilder()
       .setColor(0xf59e0b)
       .setTitle(`🪙 Баланс Vetmo Coins`)
@@ -137,7 +137,7 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   if (interaction.commandName === "faucet") {
-    const result = claimFaucet(userId);
+    const result = await claimFaucet(userId);
     if (!result.ok) {
       return interaction.reply({ content: `⏳ ${result.error}`, ephemeral: true });
     }
@@ -150,7 +150,7 @@ client.on("interactionCreate", async (interaction) => {
 
   if (interaction.commandName === "slots") {
     const bet = interaction.options.getInteger("bet");
-    const result = playSlots(userId, bet);
+    const result = await playSlots(userId, bet);
     if (!result.ok) {
       return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
     }
@@ -173,7 +173,7 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "coinflip") {
     const bet = interaction.options.getInteger("bet");
     const side = interaction.options.getString("side");
-    const result = playCoinflip(userId, bet, side);
+    const result = await playCoinflip(userId, bet, side);
     if (!result.ok) {
       return interaction.reply({ content: `❌ ${result.error}`, ephemeral: true });
     }
@@ -193,7 +193,7 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   if (interaction.commandName === "top") {
-    const top = getLeaderboard();
+    const top = await getLeaderboard();
     const desc = top
       .map((u, i) => `**#${i + 1}** <@${u.id}> — **${u.balance.toLocaleString()} VMC**`)
       .join("\n");
@@ -246,16 +246,18 @@ client.once("ready", () => {
           const minRequired = REQUIRE_COMPANION ? 2 : 1;
 
           if (humanMembers.size >= minRequired) {
-            humanMembers.forEach((member) => {
+            for (const member of humanMembers.values()) {
               // Ignore deafened users to prevent 24/7 mute AFK farming
               const isDeaf = member.voice.selfDeaf || member.voice.serverDeaf;
               if (!isDeaf) {
-                const res = addVoiceReward(member.id);
-                if (res && res.awarded > 0) {
-                  rewardedCount++;
-                }
+                try {
+                  const res = await addVoiceReward(member.id);
+                  if (res && res.awarded > 0) {
+                    rewardedCount++;
+                  }
+                } catch (_) {}
               }
-            });
+            }
           }
         }
       });

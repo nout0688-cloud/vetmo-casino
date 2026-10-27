@@ -1,104 +1,187 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import pg from "pg";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_FILE = path.resolve(__dirname, "data.json");
 
-let state = {
-  users: {}, // [discord_id]: { balance: 1000, lastFaucet: 0, totalSpins: 0, totalWins: 0 }
-};
+const databaseUrl = process.env.DATABASE_URL;
+let pool = null;
 
-// Load existing DB
+if (databaseUrl) {
+  pool = new pg.Pool({
+    connectionString: databaseUrl,
+    ssl: databaseUrl.includes("localhost") ? false : { rejectUnauthorized: false },
+  });
+
+  pool
+    .query(
+      `CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(64) PRIMARY KEY,
+        balance BIGINT NOT NULL DEFAULT 1000,
+        last_faucet BIGINT NOT NULL DEFAULT 0,
+        total_spins INTEGER NOT NULL DEFAULT 0,
+        total_wins BIGINT NOT NULL DEFAULT 0,
+        voice_minutes INTEGER NOT NULL DEFAULT 0,
+        voice_earned BIGINT NOT NULL DEFAULT 0
+      );`
+    )
+    .then(() => {
+      console.log("[db] PostgreSQL connected and table verified.");
+    })
+    .catch((err) => {
+      console.error("[db] PostgreSQL init error:", err);
+    });
+} else {
+  console.log("[db] No DATABASE_URL found. Using local JSON store.");
+}
+
+// Local JSON fallback
+let state = { users: {} };
 if (fs.existsSync(DB_FILE)) {
   try {
     state = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-  } catch (err) {
-    console.error("Failed to parse data.json, starting fresh", err);
-  }
+  } catch (_) {}
 }
 
-function save() {
+function saveJson() {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(state, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Failed to write to data.json", err);
-  }
+  } catch (_) {}
 }
 
-export function getUser(userId) {
+export async function getUser(userId) {
+  if (pool) {
+    try {
+      const res = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
+      if (res.rows.length > 0) {
+        const row = res.rows[0];
+        return {
+          id: row.id,
+          balance: parseInt(row.balance, 10),
+          lastFaucet: parseInt(row.last_faucet, 10),
+          totalSpins: parseInt(row.total_spins, 10),
+          totalWins: parseInt(row.total_wins, 10),
+          voiceMinutes: parseInt(row.voice_minutes, 10),
+          voiceEarned: parseInt(row.voice_earned, 10),
+        };
+      }
+      await pool.query(
+        "INSERT INTO users (id, balance, last_faucet, total_spins, total_wins, voice_minutes, voice_earned) VALUES ($1, 1000, 0, 0, 0, 0, 0)",
+        [userId]
+      );
+      return {
+        id: userId,
+        balance: 1000,
+        lastFaucet: 0,
+        totalSpins: 0,
+        totalWins: 0,
+        voiceMinutes: 0,
+        voiceEarned: 0,
+      };
+    } catch (err) {
+      console.error("[db] getUser error:", err);
+    }
+  }
+
+  // JSON fallback
   if (!state.users[userId]) {
     state.users[userId] = {
-      balance: 1000, // starting balance in Vetmo Coins
+      id: userId,
+      balance: 1000,
       lastFaucet: 0,
       totalSpins: 0,
       totalWins: 0,
       voiceMinutes: 0,
       voiceEarned: 0,
     };
-    save();
+    saveJson();
   }
   return state.users[userId];
 }
 
-export function addVoiceMinute(userId) {
-  const user = getUser(userId);
-  user.voiceMinutes = (user.voiceMinutes || 0) + 1;
+export async function addVoiceMinute(userId) {
+  const user = await getUser(userId);
+  const newVoiceMinutes = (user.voiceMinutes || 0) + 1;
   let awarded = 0;
-  // 25 Vetmo Coins every 10 minutes in voice
-  if (user.voiceMinutes % 10 === 0) {
+  if (newVoiceMinutes % 10 === 0) {
     awarded = 25;
-    user.balance += awarded;
-    user.voiceEarned = (user.voiceEarned || 0) + awarded;
   }
-  save();
+  const newBalance = user.balance + awarded;
+  const newVoiceEarned = (user.voiceEarned || 0) + awarded;
+
+  if (pool) {
+    try {
+      await pool.query(
+        "UPDATE users SET balance = $1, voice_minutes = $2, voice_earned = $3 WHERE id = $4",
+        [newBalance, newVoiceMinutes, newVoiceEarned, userId]
+      );
+    } catch (err) {
+      console.error("[db] addVoiceMinute pg error:", err);
+    }
+  } else {
+    user.voiceMinutes = newVoiceMinutes;
+    user.balance = newBalance;
+    user.voiceEarned = newVoiceEarned;
+    saveJson();
+  }
+
   return {
-    balance: user.balance,
-    voiceMinutes: user.voiceMinutes,
-    voiceEarned: user.voiceEarned || 0,
+    balance: newBalance,
+    voiceMinutes: newVoiceMinutes,
+    voiceEarned: newVoiceEarned,
     awarded,
   };
 }
 
-export function addVoiceReward(userId) {
-  return addVoiceMinute(userId);
+export async function addVoiceReward(userId) {
+  return await addVoiceMinute(userId);
 }
 
-export function claimFaucet(userId) {
-  const user = getUser(userId);
+export async function claimFaucet(userId) {
+  const user = await getUser(userId);
   const now = Date.now();
-  const COOLDOWN_MS = 60 * 1000; // 1 minute faucet cooldown for testing
+  const COOLDOWN_MS = 60 * 1000;
 
   if (now - user.lastFaucet < COOLDOWN_MS) {
     const remaining = Math.ceil((COOLDOWN_MS - (now - user.lastFaucet)) / 1000);
     return { ok: false, error: `Жди ${remaining} сек перед следующим клеймом.` };
   }
 
-  user.balance += 500;
-  user.lastFaucet = now;
-  save();
-  return { ok: true, balance: user.balance, added: 500 };
+  const newBalance = user.balance + 500;
+
+  if (pool) {
+    try {
+      await pool.query("UPDATE users SET balance = $1, last_faucet = $2 WHERE id = $3", [
+        newBalance,
+        now,
+        userId,
+      ]);
+    } catch (err) {
+      console.error("[db] claimFaucet pg error:", err);
+    }
+  } else {
+    user.balance = newBalance;
+    user.lastFaucet = now;
+    saveJson();
+  }
+
+  return { ok: true, balance: newBalance, added: 500 };
 }
 
-export function playSlots(userId, bet) {
-  const user = getUser(userId);
+export async function playSlots(userId, bet) {
+  const user = await getUser(userId);
   if (bet <= 0 || user.balance < bet) {
     return { ok: false, error: "Недостаточно Vetmo Coins" };
   }
 
-  user.balance -= bet;
-  user.totalSpins++;
-
   const SYMBOLS = ["7", "V", "†", "‡", "0", "★"];
-  const MULTIPLIERS = {
-    "7": 50,
-    "V": 25,
-    "†": 15,
-    "‡": 10,
-    "★": 5,
-    "0": 2,
-  };
+  const MULTIPLIERS = { "7": 50, "V": 25, "†": 15, "‡": 10, "★": 5, "0": 2 };
 
   const reels = [
     SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
@@ -106,10 +189,7 @@ export function playSlots(userId, bet) {
     SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
   ];
 
-  // Lucky bias: 20% chance to match reel 2 to reel 1
-  if (Math.random() < 0.2) {
-    reels[1] = reels[0];
-  }
+  if (Math.random() < 0.2) reels[1] = reels[0];
 
   let win = 0;
   let multiplier = 0;
@@ -122,54 +202,94 @@ export function playSlots(userId, bet) {
     win = Math.floor(bet * 1.5);
   }
 
-  if (win > 0) {
-    user.balance += win;
-    user.totalWins += win;
+  const newBalance = user.balance - bet + win;
+  const newTotalSpins = (user.totalSpins || 0) + 1;
+  const newTotalWins = (user.totalWins || 0) + win;
+
+  if (pool) {
+    try {
+      await pool.query(
+        "UPDATE users SET balance = $1, total_spins = $2, total_wins = $3 WHERE id = $4",
+        [newBalance, newTotalSpins, newTotalWins, userId]
+      );
+    } catch (err) {
+      console.error("[db] playSlots pg error:", err);
+    }
+  } else {
+    user.balance = newBalance;
+    user.totalSpins = newTotalSpins;
+    user.totalWins = newTotalWins;
+    saveJson();
   }
 
-  save();
   return {
     ok: true,
     reels,
     bet,
     win,
     multiplier,
-    balance: user.balance,
+    balance: newBalance,
   };
 }
 
-export function playCoinflip(userId, bet, chosenSide) {
-  const user = getUser(userId);
+export async function playCoinflip(userId, bet, chosenSide) {
+  const user = await getUser(userId);
   if (bet <= 0 || user.balance < bet) {
     return { ok: false, error: "Недостаточно Vetmo Coins" };
   }
 
-  user.balance -= bet;
   const outcome = Math.random() < 0.5 ? "heads" : "tails";
   const won = outcome === chosenSide;
   const win = won ? bet * 2 : 0;
 
-  if (won) {
-    user.balance += win;
-    user.totalWins += win;
+  const newBalance = user.balance - bet + win;
+  const newTotalWins = (user.totalWins || 0) + win;
+
+  if (pool) {
+    try {
+      await pool.query(
+        "UPDATE users SET balance = $1, total_wins = $2 WHERE id = $3",
+        [newBalance, newTotalWins, userId]
+      );
+    } catch (err) {
+      console.error("[db] playCoinflip pg error:", err);
+    }
+  } else {
+    user.balance = newBalance;
+    user.totalWins = newTotalWins;
+    saveJson();
   }
 
-  save();
   return {
     ok: true,
     outcome,
     won,
     bet,
     win,
-    balance: user.balance,
+    balance: newBalance,
   };
 }
 
-export function getLeaderboard() {
+export async function getLeaderboard() {
+  if (pool) {
+    try {
+      const res = await pool.query(
+        'SELECT id, balance, total_wins AS "totalWins" FROM users ORDER BY balance DESC LIMIT 10'
+      );
+      return res.rows.map((r) => ({
+        id: r.id,
+        balance: parseInt(r.balance, 10),
+        totalWins: parseInt(r.totalWins, 10),
+      }));
+    } catch (err) {
+      console.error("[db] getLeaderboard pg error:", err);
+    }
+  }
+
   const list = Object.entries(state.users).map(([id, u]) => ({
     id,
     balance: u.balance,
-    totalWins: u.totalWins,
+    totalWins: u.totalWins || 0,
   }));
   list.sort((a, b) => b.balance - a.balance);
   return list.slice(0, 10);

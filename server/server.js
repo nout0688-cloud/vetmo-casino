@@ -53,42 +53,42 @@ app.post("/api/token", async (req, res) => {
 });
 
 // 2. Casino: Get User Profile & Balance
-app.get("/api/user/:id", (req, res) => {
-  const user = getUser(req.params.id);
+app.get("/api/user/:id", async (req, res) => {
+  const user = await getUser(req.params.id);
   res.json({ ok: true, user });
 });
 
 // 3. Casino: Claim Daily Faucet
-app.post("/api/faucet", (req, res) => {
+app.post("/api/faucet", async (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: "Missing userId" });
-  const result = claimFaucet(userId);
+  const result = await claimFaucet(userId);
   res.json(result);
 });
 
 // 4. Casino: Play Slots
-app.post("/api/slots", (req, res) => {
+app.post("/api/slots", async (req, res) => {
   const { userId, bet } = req.body;
   if (!userId || typeof bet !== "number") {
     return res.status(400).json({ error: "Invalid parameters" });
   }
-  const result = playSlots(userId, Math.floor(bet));
+  const result = await playSlots(userId, Math.floor(bet));
   res.json(result);
 });
 
 // 5. Casino: Play Coinflip
-app.post("/api/coinflip", (req, res) => {
+app.post("/api/coinflip", async (req, res) => {
   const { userId, bet, side } = req.body;
   if (!userId || typeof bet !== "number" || !["heads", "tails"].includes(side)) {
     return res.status(400).json({ error: "Invalid parameters" });
   }
-  const result = playCoinflip(userId, Math.floor(bet), side);
+  const result = await playCoinflip(userId, Math.floor(bet), side);
   res.json(result);
 });
 
 // 6. Casino: Leaderboard
-app.get("/api/leaderboard", (req, res) => {
-  res.json({ ok: true, leaderboard: getLeaderboard() });
+app.get("/api/leaderboard", async (req, res) => {
+  res.json({ ok: true, leaderboard: await getLeaderboard() });
 });
 
 // Production static file serving
