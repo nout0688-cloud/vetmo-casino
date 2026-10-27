@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>VETMO CASINO | MONOCHROME EDITION</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- Preloader Intro Overlay -->
+    <div id="preloader" class="preloader">
+      <div class="preloader-box">
+        <div class="preloader-monogram">V</div>
+        <div class="preloader-title">VETMO CASINO</div>
+        <div class="preloader-sub">VETEMENTS &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН</div>
+        <div class="preloader-bar-wrap">
+          <div id="preloader-bar" class="preloader-bar"></div>
+        </div>
+        <div class="preloader-footer">
+          <span id="preloader-status">ЗАГРУЗКА...</span>
+          <span id="preloader-pct">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Animated Kinetic Typography Background -->
+    <div class="kinetic-bg" aria-hidden="true">
+      <div class="marquee-row dir-left">
+        <div class="marquee-content">
+          <span>VETEMENTS &bull; VETMO &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETEMENTS &bull; VETMO &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; </span>
+          <span>VETEMENTS &bull; VETMO &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETEMENTS &bull; VETMO &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; </span>
+        </div>
+      </div>
+      <div class="marquee-row dir-right fast">
+        <div class="marquee-content">
+          <span>ШИШКОРЗЯН &bull; ШАКИРЗЯН &bull; VETMO &bull; VETEMENTS &bull; ШИШКОРЗЯН &bull; ШАКИРЗЯН &bull; VETMO &bull; VETEMENTS &bull; </span>
+          <span>ШИШКОРЗЯН &bull; ШАКИРЗЯН &bull; VETMO &bull; VETEMENTS &bull; ШИШКОРЗЯН &bull; ШАКИРЗЯН &bull; VETMO &bull; VETEMENTS &bull; </span>
+        </div>
+      </div>
+      <div class="marquee-row dir-left slow">
+        <div class="marquee-content">
+          <span>VETMO COINS &bull; ШАКИРЗЯН &bull; VETEMENTS &bull; ШИШКОРЗЯН &bull; VETMO COINS &bull; ШАКИРЗЯН &bull; VETEMENTS &bull; ШИШКОРЗЯН &bull; </span>
+          <span>VETMO COINS &bull; ШАКИРЗЯН &bull; VETEMENTS &bull; ШИШКОРЗЯН &bull; VETMO COINS &bull; ШАКИРЗЯН &bull; VETEMENTS &bull; ШИШКОРЗЯН &bull; </span>
+        </div>
+      </div>
+      <div class="marquee-row dir-right">
+        <div class="marquee-content">
+          <span>VETEMENTS &bull; ШИШКОРЗЯН &bull; VETMO &bull; ШАКИРЗЯН &bull; VETEMENTS &bull; ШИШКОРЗЯН &bull; VETMO &bull; ШАКИРЗЯН &bull; </span>
+          <span>VETEMENTS &bull; ШИШКОРЗЯН &bull; VETMO &bull; ШАКИРЗЯН &bull; VETEMENTS &bull; ШИШКОРЗЯН &bull; VETMO &bull; ШАКИРЗЯН &bull; </span>
+        </div>
+      </div>
+      <div class="marquee-row dir-left fast">
+        <div class="marquee-content">
+          <span>ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETMO &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETMO &bull; VETEMENTS &bull; </span>
+          <span>ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETMO &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETMO &bull; VETEMENTS &bull; </span>
+        </div>
+      </div>
+      <div class="marquee-row dir-right slow">
+        <div class="marquee-content">
+          <span>VETMO COINS &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETMO COINS &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; </span>
+          <span>VETMO COINS &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETMO COINS &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; </span>
+        </div>
+      </div>
+      <div class="marquee-row dir-left">
+        <div class="marquee-content">
+          <span>ШИШКОРЗЯН &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; VETMO &bull; ШИШКОРЗЯН &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; VETMO &bull; </span>
+          <span>ШИШКОРЗЯН &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; VETMO &bull; ШИШКОРЗЯН &bull; VETEMENTS &bull; ШАКИРЗЯН &bull; VETMO &bull; </span>
+        </div>
+      </div>
+      <div class="marquee-row dir-right fast">
+        <div class="marquee-content">
+          <span>VETEMENTS &bull; VETMO &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETEMENTS &bull; VETMO &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; </span>
+          <span>VETEMENTS &bull; VETMO &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; VETEMENTS &bull; VETMO &bull; ШАКИРЗЯН &bull; ШИШКОРЗЯН &bull; </span>
+        </div>
+      </div>
+    </div>
+
+    <div id="app">
+      <!-- User / Context Header -->
+      <header class="app-header">
+        <div class="user-info">
+          <img id="avatar" class="avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" />
+          <div>
+            <div class="username-wrapper">
+              <span id="username">ПОДКЛЮЧЕНИЕ...</span>
+              <span class="badge" id="status-badge">INIT</span>
+            </div>
+            <p id="channel-name" class="subtitle">КАНАЛ: -</p>
+          </div>
+        </div>
+
+        <div class="balance-card">
+          <div class="balance-label">VETMO COINS</div>
+          <div class="balance-amount" id="balance-val">1,000 VMC</div>
+          <div class="voice-badge">ВОЙС +15 VMC/МИН</div>
+          <button id="faucet-btn" class="btn btn-sm btn-faucet">+500 VMC</button>
+        </div>
+      </header>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button class="tab-btn active" data-tab="slots">СЛОТЫ</button>
+        <button class="tab-btn" data-tab="coinflip">ОРЁЛ / РЕШКА</button>
+        <button class="tab-btn" data-tab="leaderboard">ТОП</button>
+      </nav>
+
+      <!-- View: Slots -->
+      <section id="view-slots" class="view-panel active">
+        <div class="slot-machine">
+          <div class="reels-container">
+            <div class="reel" id="reel-1">7</div>
+            <div class="reel" id="reel-2">7</div>
+            <div class="reel" id="reel-3">7</div>
+          </div>
+          <div class="machine-status" id="slot-status">ВЫБЕРИ СТАВКУ И КРУТИ</div>
+        </div>
+
+        <div class="bet-controls">
+          <div class="bet-input-wrap">
+            <label for="slot-bet">СТАВКА:</label>
+            <input type="number" id="slot-bet" value="50" min="10" step="10" />
+          </div>
+          <div class="quick-chips">
+            <button class="chip" data-bet="50">50</button>
+            <button class="chip" data-bet="100">100</button>
+            <button class="chip" data-bet="250">250</button>
+            <button class="chip" data-bet="max">MAX</button>
+          </div>
+        </div>
+
+        <button id="spin-btn" class="btn btn-primary btn-spin">КРУТИТЬ</button>
+      </section>
+
+      <!-- View: Coinflip -->
+      <section id="view-coinflip" class="view-panel">
+        <div class="coinflip-box">
+          <div class="coin-display" id="coin-element">V</div>
+          <div class="coin-result" id="flip-status">ВЫБЕРИ СТОРОНУ</div>
+        </div>
+
+        <div class="coin-choice-grid">
+          <button class="side-btn active" data-side="heads">ОРЁЛ (V) x2</button>
+          <button class="side-btn" data-side="tails">РЕШКА (Ш) x2</button>
+        </div>
+
+        <div class="bet-controls">
+          <div class="bet-input-wrap">
+            <label for="flip-bet">СТАВКА:</label>
+            <input type="number" id="flip-bet" value="50" min="10" step="10" />
+          </div>
+        </div>
+
+        <button id="flip-btn" class="btn btn-primary btn-spin">БРОСИТЬ МОНЕТУ</button>
+      </section>
+
+      <!-- View: Leaderboard -->
+      <section id="view-leaderboard" class="view-panel">
+        <h3 class="leaderboard-title">ТАБЛИЦА ЛИДЕРОВ VETMO</h3>
+        <div class="leaderboard-list" id="leaderboard-list">
+          <p class="empty-text">ЗАГРУЗКА...</p>
+        </div>
+      </section>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

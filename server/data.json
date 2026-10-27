@@ -1,0 +1,12 @@
+{
+  "users": {
+    "local_dev_user": {
+      "balance": 925,
+      "lastFaucet": 0,
+      "totalSpins": 1,
+      "totalWins": 75,
+      "voiceMinutes": 0,
+      "voiceEarned": 0
+    }
+  }
+}
