@@ -78,22 +78,28 @@
     <div id="app">
       <!-- User / Context Header -->
       <header class="app-header">
-        <div class="user-info">
-          <img id="avatar" class="avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" />
-          <div>
-            <div class="username-wrapper">
-              <span id="username">ПОДКЛЮЧЕНИЕ...</span>
-              <span class="badge" id="status-badge">INIT</span>
+        <div class="header-main-row">
+          <div class="user-info">
+            <img id="avatar" class="avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" />
+            <div class="user-meta">
+              <div class="username-wrapper">
+                <span id="username">ПОДКЛЮЧЕНИЕ...</span>
+                <span class="badge" id="status-badge">INIT</span>
+              </div>
+              <p id="channel-name" class="subtitle">КАНАЛ: -</p>
             </div>
-            <p id="channel-name" class="subtitle">КАНАЛ: -</p>
+          </div>
+
+          <div class="balance-card">
+            <div class="balance-label">БАЛАНС</div>
+            <div class="balance-amount" id="balance-val">1,000 VMC</div>
+            <button id="faucet-btn" class="btn btn-sm btn-faucet">+500 VMC</button>
           </div>
         </div>
 
-        <div class="balance-card">
-          <div class="balance-label">VETMO COINS</div>
-          <div class="balance-amount" id="balance-val">1,000 VMC</div>
-          <div class="voice-badge">ВОЙС +25 VMC/10 МИН</div>
-          <button id="faucet-btn" class="btn btn-sm btn-faucet">+500 VMC</button>
+        <div class="voice-badge">
+          <span class="voice-pulse-dot"></span>
+          <span>ВОЙС-МАЙНИНГ: +25 VMC / 10 МИН В КАНАЛЕ</span>
         </div>
       </header>
 

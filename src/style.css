@@ -203,44 +203,60 @@ body {
 /* Header */
 .app-header {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 14px;
+}
+
+.header-main-row {
+  display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 16px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  min-width: 0;
+}
+
+.user-meta {
+  min-width: 0;
 }
 
 .avatar {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--border-bright);
   background-color: var(--bg-surface);
   filter: grayscale(100%) contrast(120%);
+  flex-shrink: 0;
 }
 
 .username-wrapper {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 #username {
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   letter-spacing: 0.5px;
   color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .badge {
   font-size: 0.65rem;
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 3px;
   font-weight: 800;
   letter-spacing: 0.5px;
@@ -256,9 +272,12 @@ body {
 }
 
 .subtitle {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-dim);
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .balance-card {
@@ -267,10 +286,11 @@ body {
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .balance-label {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -285,21 +305,38 @@ body {
 }
 
 .voice-badge {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.5px;
-  color: #ffffff;
-  background: #18181b;
-  border: 1px solid var(--border-bright);
-  border-radius: 3px;
-  padding: 2px 5px;
-  margin-top: 2px;
+  color: var(--text-dim);
+  background: #111113;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voice-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 6px #ffffff;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
 }
 
 .btn-faucet {
-  margin-top: 4px;
-  padding: 5px 9px;
-  font-size: 0.75rem;
+  margin-top: 2px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.5px;
   background-color: #ffffff;
@@ -614,59 +651,105 @@ body {
 /* Mobile Viewport Adaptation */
 @media (max-width: 480px) {
   body {
-    padding: 8px 6px;
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding: 0;
+    /* Clear zone for Discord mobile top bar (avoids "Покинуть" and title collision) */
+    padding-top: max(64px, calc(env(safe-area-inset-top, 0px) + 52px));
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
     align-items: flex-start;
+    background-color: #000000;
   }
 
   .kinetic-bg {
-    opacity: 0.08;
+    opacity: 0.05;
   }
 
   .marquee-row {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     letter-spacing: 2px;
   }
 
   #app {
-    padding: 16px 12px;
-    gap: 12px;
-    border-radius: 12px;
+    width: 100%;
     max-width: 100%;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 8px 14px 20px 14px;
+    gap: 14px;
   }
 
-  .reel {
-    width: 66px;
-    height: 84px;
-    font-size: 2.2rem;
+  .app-header {
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+
+  .header-main-row {
+    gap: 8px;
+  }
+
+  .avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  #username {
+    font-size: 0.82rem;
+  }
+
+  .balance-amount {
+    font-size: 1.05rem;
+  }
+
+  .btn-faucet {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+
+  .voice-badge {
+    font-size: 0.65rem;
+    padding: 5px 8px;
+  }
+
+  .nav-tabs {
+    padding: 3px;
+  }
+
+  .tab-btn {
+    padding: 10px 4px;
+    font-size: 0.78rem;
+  }
+
+  .slot-machine {
+    padding: 16px 10px;
+    background-color: #0c0c0e;
+    border-radius: 12px;
   }
 
   .reels-container {
     gap: 8px;
   }
 
-  .btn-spin {
-    padding: 12px;
-    font-size: 0.9rem;
-  }
-
-  .avatar {
-    width: 40px;
-    height: 40px;
-  }
-
-  #username {
-    font-size: 0.85rem;
-  }
-
-  .balance-amount {
-    font-size: 1rem;
-  }
-
-  .coin-display {
+  .reel {
     width: 72px;
-    height: 72px;
-    font-size: 2rem;
+    height: 92px;
+    font-size: 2.5rem;
+  }
+
+  .btn-spin {
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
+  .chip {
+    padding: 8px;
+    font-size: 0.78rem;
+  }
+
+  .coinflip-box {
+    padding: 20px 10px;
+    background-color: #0c0c0e;
+    border-radius: 12px;
   }
 
   button, input {
