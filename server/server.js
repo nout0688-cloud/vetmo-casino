@@ -17,6 +17,13 @@ const clientSecret = process.env.DISCORD_CLIENT_SECRET;
 
 app.use(express.json());
 
+// 0. Public runtime config for client
+app.get("/api/config", (req, res) => {
+  res.json({
+    clientId: clientId || "",
+  });
+});
+
 // 1. Discord OAuth2 token exchange
 app.post("/api/token", async (req, res) => {
   const { code } = req.body;
@@ -54,7 +61,8 @@ app.post("/api/token", async (req, res) => {
 
 // 2. Casino: Get User Profile & Balance
 app.get("/api/user/:id", async (req, res) => {
-  const user = await getUser(req.params.id);
+  const { username, avatar } = req.query;
+  const user = await getUser(req.params.id, username, avatar);
   res.json({ ok: true, user });
 });
 

@@ -23,13 +23,17 @@ if (databaseUrl) {
     .query(
       `CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(64) PRIMARY KEY,
+        username VARCHAR(64) DEFAULT '',
+        avatar VARCHAR(128) DEFAULT '',
         balance BIGINT NOT NULL DEFAULT 1000,
         last_faucet BIGINT NOT NULL DEFAULT 0,
         total_spins INTEGER NOT NULL DEFAULT 0,
         total_wins BIGINT NOT NULL DEFAULT 0,
         voice_minutes INTEGER NOT NULL DEFAULT 0,
         voice_earned BIGINT NOT NULL DEFAULT 0
-      );`
+      );
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(64) DEFAULT '';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(128) DEFAULT '';`
     )
     .then(() => {
       console.log("[db] PostgreSQL connected and table verified.");
@@ -55,14 +59,27 @@ function saveJson() {
   } catch (_) {}
 }
 
-export async function getUser(userId) {
+export async function getUser(userId, username = null, avatar = null) {
   if (pool) {
     try {
       const res = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
       if (res.rows.length > 0) {
         const row = res.rows[0];
+        if ((username && username !== row.username) || (avatar && avatar !== row.avatar)) {
+          const newName = username || row.username || "";
+          const newAvatar = avatar || row.avatar || "";
+          await pool.query("UPDATE users SET username = $1, avatar = $2 WHERE id = $3", [
+            newName,
+            newAvatar,
+            userId,
+          ]);
+          row.username = newName;
+          row.avatar = newAvatar;
+        }
         return {
           id: row.id,
+          username: row.username || "",
+          avatar: row.avatar || "",
           balance: parseInt(row.balance, 10),
           lastFaucet: parseInt(row.last_faucet, 10),
           totalSpins: parseInt(row.total_spins, 10),
@@ -72,11 +89,13 @@ export async function getUser(userId) {
         };
       }
       await pool.query(
-        "INSERT INTO users (id, balance, last_faucet, total_spins, total_wins, voice_minutes, voice_earned) VALUES ($1, 1000, 0, 0, 0, 0, 0)",
-        [userId]
+        "INSERT INTO users (id, username, avatar, balance, last_faucet, total_spins, total_wins, voice_minutes, voice_earned) VALUES ($1, $2, $3, 1000, 0, 0, 0, 0, 0)",
+        [userId, username || "", avatar || ""]
       );
       return {
         id: userId,
+        username: username || "",
+        avatar: avatar || "",
         balance: 1000,
         lastFaucet: 0,
         totalSpins: 0,
@@ -93,6 +112,8 @@ export async function getUser(userId) {
   if (!state.users[userId]) {
     state.users[userId] = {
       id: userId,
+      username: username || "",
+      avatar: avatar || "",
       balance: 1000,
       lastFaucet: 0,
       totalSpins: 0,
@@ -100,6 +121,10 @@ export async function getUser(userId) {
       voiceMinutes: 0,
       voiceEarned: 0,
     };
+    saveJson();
+  } else if (username || avatar) {
+    if (username) state.users[userId].username = username;
+    if (avatar) state.users[userId].avatar = avatar;
     saveJson();
   }
   return state.users[userId];
@@ -274,10 +299,12 @@ export async function getLeaderboard() {
   if (pool) {
     try {
       const res = await pool.query(
-        'SELECT id, balance, total_wins AS "totalWins" FROM users ORDER BY balance DESC LIMIT 10'
+        'SELECT id, username, avatar, balance, total_wins AS "totalWins" FROM users ORDER BY balance DESC LIMIT 10'
       );
       return res.rows.map((r) => ({
         id: r.id,
+        username: r.username || "",
+        avatar: r.avatar || "",
         balance: parseInt(r.balance, 10),
         totalWins: parseInt(r.totalWins, 10),
       }));
@@ -288,6 +315,8 @@ export async function getLeaderboard() {
 
   const list = Object.entries(state.users).map(([id, u]) => ({
     id,
+    username: u.username || "",
+    avatar: u.avatar || "",
     balance: u.balance,
     totalWins: u.totalWins || 0,
   }));

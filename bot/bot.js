@@ -47,9 +47,6 @@ const commands = [
     .setName("balance")
     .setDescription("Проверить свой баланс Vetmo Coins (VMC)"),
   new SlashCommandBuilder()
-    .setName("faucet")
-    .setDescription("Получить ежедневные бесплатные 500 Vetmo Coins (VMC)"),
-  new SlashCommandBuilder()
     .setName("slots")
     .setDescription("Крутить слот-машину на Vetmo Coins")
     .addIntegerOption((opt) =>
@@ -117,10 +114,11 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   const userId = interaction.user.id;
-  const username = interaction.user.username;
+  const username = interaction.user.globalName || interaction.user.username;
+  const avatar = interaction.user.avatar || "";
 
   if (interaction.commandName === "balance") {
-    const user = await getUser(userId);
+    const user = await getUser(userId, username, avatar);
     const embed = new EmbedBuilder()
       .setColor(0xf59e0b)
       .setTitle(`🪙 Баланс Vetmo Coins`)
@@ -136,19 +134,8 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ embeds: [embed] });
   }
 
-  if (interaction.commandName === "faucet") {
-    const result = await claimFaucet(userId);
-    if (!result.ok) {
-      return interaction.reply({ content: `⏳ ${result.error}`, ephemeral: true });
-    }
-    const embed = new EmbedBuilder()
-      .setColor(0x10b981)
-      .setTitle("💧 Vetmo Faucet")
-      .setDescription(`Ты получил **+500 VMC**!\nТекущий баланс: **${result.balance.toLocaleString()} VMC**`);
-    return interaction.reply({ embeds: [embed] });
-  }
-
   if (interaction.commandName === "slots") {
+    await getUser(userId, username, avatar);
     const bet = interaction.options.getInteger("bet");
     const result = await playSlots(userId, bet);
     if (!result.ok) {
@@ -171,6 +158,7 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   if (interaction.commandName === "coinflip") {
+    await getUser(userId, username, avatar);
     const bet = interaction.options.getInteger("bet");
     const side = interaction.options.getString("side");
     const result = await playCoinflip(userId, bet, side);
@@ -195,7 +183,10 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "top") {
     const top = await getLeaderboard();
     const desc = top
-      .map((u, i) => `**#${i + 1}** <@${u.id}> — **${u.balance.toLocaleString()} VMC**`)
+      .map(
+        (u, i) =>
+          `**#${i + 1}** ${u.username ? `**${u.username}**` : `<@${u.id}>`} — **${u.balance.toLocaleString()} VMC**`
+      )
       .join("\n");
     const embed = new EmbedBuilder()
       .setColor(0xf59e0b)
@@ -212,7 +203,7 @@ client.on("interactionCreate", async (interaction) => {
         "Нажми зелёную кнопку **«ИГРАТЬ В КАЗИНО»** ниже — окно активности запустится прямо внутри Discord!\n\n" +
           "• Монохромные слоты и Coinflip\n" +
           "• Живой баланс Vetmo Coins (VMC)\n" +
-          "• Войс-майнинг (+15 VMC / мин в войсе)"
+          "• Войс-майнинг (+25 VMC за 10 мин в войсе)"
       );
 
     const row = new ActionRowBuilder().addComponents(
@@ -237,17 +228,16 @@ client.once("ready", () => {
   registerCommands();
 
   // Voice mining ticker: runs every 60 seconds
-  setInterval(() => {
+  setInterval(async () => {
     let rewardedCount = 0;
-    client.guilds.cache.forEach((guild) => {
-      guild.channels.cache.forEach((channel) => {
+    for (const guild of client.guilds.cache.values()) {
+      for (const channel of guild.channels.cache.values()) {
         if (channel.isVoiceBased()) {
           const humanMembers = channel.members.filter((m) => !m.user.bot);
           const minRequired = REQUIRE_COMPANION ? 2 : 1;
 
           if (humanMembers.size >= minRequired) {
             for (const member of humanMembers.values()) {
-              // Ignore deafened users to prevent 24/7 mute AFK farming
               const isDeaf = member.voice.selfDeaf || member.voice.serverDeaf;
               if (!isDeaf) {
                 try {
@@ -260,8 +250,12 @@ client.once("ready", () => {
             }
           }
         }
-      });
-    });
+      }
+    }
+    if (rewardedCount > 0) {
+      console.log(`[voice-miner] Awarded +25 VMC to ${rewardedCount} active voice members reaching 10-min mark.`);
+    }
+  }, 60 * 1000);
     if (rewardedCount > 0) {
       console.log(`[voice-miner] Awarded +25 VMC to ${rewardedCount} active voice members reaching 10-min mark.`);
     }

@@ -1,8 +1,10 @@
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 
-const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID || "";
+let clientId = import.meta.env.VITE_DISCORD_CLIENT_ID || "";
 let discordSdk = null;
 let currentUserId = "guest_player";
+let currentUsername = "ИГРОК (VETMO)";
+let currentUserAvatar = "";
 let balance = 1000;
 let isBusy = false;
 let selectedCoinSide = "heads";
@@ -13,7 +15,6 @@ const channelNameEl = document.getElementById("channel-name");
 const avatarEl = document.getElementById("avatar");
 const statusBadge = document.getElementById("status-badge");
 const balanceVal = document.getElementById("balance-val");
-const faucetBtn = document.getElementById("faucet-btn");
 
 const tabButtons = document.querySelectorAll(".tab-btn");
 const viewPanels = {
@@ -99,28 +100,6 @@ sideButtons.forEach((btn) => {
     btn.classList.add("active");
     selectedCoinSide = btn.dataset.side;
   });
-});
-
-// Faucet
-faucetBtn.addEventListener("click", async () => {
-  playSfx("coin");
-  try {
-    const res = await fetch("/api/faucet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUserId }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      updateBalanceDisplay(data.balance);
-      faucetBtn.textContent = "✓ +500 VMC";
-      setTimeout(() => (faucetBtn.textContent = "+500 VMC"), 3000);
-    } else {
-      alert(data.error || "ОШИБКА КЛЕЙМА");
-    }
-  } catch (err) {
-    console.error("Faucet error:", err);
-  }
 });
 
 // Slots Spin
@@ -257,15 +236,27 @@ async function fetchLeaderboard() {
     }
 
     leaderboardList.innerHTML = data.leaderboard
-      .map(
-        (item, idx) => `
-        <div class="leader-item">
+      .map((item, idx) => {
+        const isMe = item.id === currentUserId;
+        const name = item.username || item.id;
+        const avatarUrl = item.avatar
+          ? (item.avatar.startsWith("http")
+              ? item.avatar
+              : `https://cdn.discordapp.com/avatars/${item.id}/${item.avatar}.png?size=64`)
+          : "https://cdn.discordapp.com/embed/avatars/0.png";
+
+        return `
+        <div class="leader-item ${isMe ? "leader-item-me" : ""}">
           <span class="leader-rank">#${idx + 1}</span>
-          <span class="leader-id">${item.id === currentUserId ? "ТЫ (" + item.id + ")" : item.id}</span>
+          <img class="leader-avatar" src="${avatarUrl}" alt="" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" />
+          <div class="leader-info">
+            <span class="leader-name">${name}</span>
+            ${isMe ? '<span class="leader-tag">ВЫ</span>' : ""}
+          </div>
           <span class="leader-coins">${item.balance.toLocaleString()} VMC</span>
         </div>
-      `
-      )
+      `;
+      })
       .join("");
   } catch (err) {
     leaderboardList.innerHTML = `<p class="empty-text">ОШИБКА ЗАГРУЗКИ</p>`;
@@ -294,17 +285,31 @@ function dismissPreloader() {
 // App Initialization
 async function initApp() {
   setProgress(20, "ПРОВЕРКА АССЕТОВ...");
-  await new Promise((r) => setTimeout(r, 120));
+  await new Promise((r) => setTimeout(r, 100));
 
-  const inDiscordIframe = window !== window.parent;
+  // 1. Fetch runtime Discord Client ID if not baked into Vite
+  if (!clientId) {
+    try {
+      const cfgRes = await fetch("/api/config");
+      const cfg = await cfgRes.json();
+      if (cfg && cfg.clientId) {
+        clientId = cfg.clientId;
+      }
+    } catch (err) {
+      console.warn("Failed to retrieve runtime client_id:", err);
+    }
+  }
 
   setProgress(45, "СИНХРОНИЗАЦИЯ DISCORD IPC...");
+
+  const inDiscordIframe = window !== window.parent || window.location.search.includes("frame_id");
 
   if (!inDiscordIframe || !clientId) {
     statusBadge.textContent = "STANDALONE";
     channelNameEl.textContent = "ЛОКАЛЬНЫЙ ТЕСТ";
     usernameEl.textContent = "ИГРОК (VETMO)";
     currentUserId = "local_dev_user";
+    currentUsername = "ИГРОК (VETMO)";
   } else {
     try {
       discordSdk = new DiscordSDK(clientId);
@@ -329,25 +334,37 @@ async function initApp() {
       const user = auth.user;
       currentUserId = user.id;
 
-      usernameEl.textContent = user.global_name || user.username;
+      const displayName = user.global_name || user.username;
+      currentUsername = displayName;
+      usernameEl.textContent = displayName;
       channelNameEl.textContent = `КАНАЛ: ${discordSdk.channelId ?? "VOICE/TEXT"}`;
       statusBadge.textContent = "ONLINE";
       statusBadge.classList.add("online");
 
       if (user.avatar) {
+        currentUserAvatar = user.avatar;
         avatarEl.src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`;
+      } else {
+        avatarEl.src = `https://cdn.discordapp.com/embed/avatars/0.png`;
       }
     } catch (err) {
       console.error("Discord SDK auth failed:", err);
       statusBadge.textContent = "AUTH ERROR";
+      usernameEl.textContent = "DISCORD ГОСТЬ";
+      currentUserId = "discord_guest_" + Math.random().toString(36).substring(2, 7);
+      currentUsername = usernameEl.textContent;
     }
   }
 
   setProgress(75, "ЗАГРУЗКА БАЛАНСА VETMO COINS...");
-  await new Promise((r) => setTimeout(r, 150));
+  await new Promise((r) => setTimeout(r, 120));
 
   try {
-    const res = await fetch(`/api/user/${currentUserId}`);
+    const q = new URLSearchParams({
+      username: currentUsername || "",
+      avatar: currentUserAvatar || "",
+    });
+    const res = await fetch(`/api/user/${currentUserId}?${q.toString()}`);
     const data = await res.json();
     if (data.ok && data.user) {
       updateBalanceDisplay(data.user.balance);
